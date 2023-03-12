@@ -1,8 +1,8 @@
 # RecyclerviewAdapterDelegation
 ## The adapter makes it a little easier to create RV Adapter with multiple viewtypes 
-##Usage
+## Usage
 
-###1.Creating pojos
+### 1.Creating pojos
 ```kotlin
 
 data class SomeClass(
@@ -16,9 +16,9 @@ data class SomeAnotherClass(
 )
 
 ```
-###2.Creating layouts ...
+### 2.Creating layouts ...
 
-###3.Creating ViewHolders, need to extend ItemViewHolder class
+### 3.Creating ViewHolders, need to extend ItemViewHolder class
 ```kotlin
 class SomeTextItemViewHolder(
     view: View,
@@ -49,7 +49,7 @@ class SomeAnotherTextItemViewHolder(
 
 }
 ```
-###3.Creating Adapter, need to create ItemsAdapter class and provide ItemDelegates
+### 3.Creating Adapter, need to create ItemsAdapter class and provide ItemDelegates
 ```kotlin
 class SomeFragment : Fragment(R.layout.list_fragment) {
 
