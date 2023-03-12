@@ -1,6 +1,6 @@
 # RecyclerviewAdapterDelegation
 ## The adapter makes it a little easier to create RV Adapter with multiple viewtypes 
-## Usage
+## Basic usage
 
 ### 1.Creating pojos
 ```kotlin
