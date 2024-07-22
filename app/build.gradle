@@ -36,5 +36,6 @@ dependencies {
     implementation rootProject.ext.dependencies.coreKtx
     implementation rootProject.ext.dependencies.appcompat
     implementation rootProject.ext.dependencies.material
+    implementation project(":delegation-adapter")
 
 }

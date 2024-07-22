@@ -18,38 +18,7 @@ data class SomeAnotherClass(
 ```
 ### 2.Creating layouts ...
 
-### 3.Creating ViewHolders, need to extend ItemViewHolder class
-```kotlin
-class SomeTextItemViewHolder(
-    view: View,
-) : ItemViewHolder<SomeClass>(view) {
-
-    private val binding = TextItemBinding.bind(view)
-
-    override fun onBind(item: SomeClass) {
-        binding.textView.text = item.text
-    }
-}
-
-
-class SomeAnotherTextItemViewHolder(
-    view: View,
-    onItemClick: (itemId: Long) -> Unit
-) : ItemViewHolder<SomeAnotherClass>(view) {
-
-    private val binding = TextItemBinding.bind(view)
-
-    init {
-        binding.root.setOnClickListener { onItemClick(item.id) }
-    }
-
-    override fun onBind(item: SomeAnotherClass) {
-        binding.textView.text = item.anotherText
-    }
-
-}
-```
-### 3.Creating Adapter, need to create ItemsAdapter class and provide ItemDelegates
+### 3.Creating Adapter
 ```kotlin
 class SomeFragment : Fragment(R.layout.list_fragment) {
 
@@ -57,26 +26,113 @@ class SomeFragment : Fragment(R.layout.list_fragment) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val itemsAdapter = setupAdapter()
-        binding.recyclerView.adapter = itemsAdapter
+        val rvAdapter = Adapter()
+        binding.apply {
+            recyclerView.adapter = rvAdapter
+        }
     }
 
-    private fun setupAdapter() = ItemsAdapter(
-        ItemDelegate(
-            layout = R.layout.text_item,
-            diffUtil = ItemDiffUtil(itemsTheSameValue = SomeClass::id),
-            VHProducer = { view -> SomeTextItemViewHolder(view) }
-        ),
-        ItemDelegate(
-            layout = R.layout.text_item,
-            diffUtil = ItemDiffUtil(itemsTheSameValue = SomeAnotherClass::id),
-            VHProducer = { view ->
-                SomeAnotherTextItemViewHolder(view = view, onItemClick = { /* Some Action */ })
+    private fun Adapter() = ItemsAdapter {
+
+        item<SomeClass, TextItemBinding> {
+            layout { R.layout.text_item }
+            diffUtil {
+                areItemsTheSame { oldItem, newItem -> oldItem.id == newItem.id }
+                areContentsTheSame { oldItem, newItem -> oldItem == newItem }
             }
-        )
-    )
-    
+            viewHolder {
+                viewBinding(TextItemBinding::bind)
+                viewBindingCreated {
+                    // setup item view (set click listener etc)
+                }
+            }
+            onBind {
+                binding.textView.text = item.text
+            }
+        }
+
+        // another view type
+        item<SomeAnotherClass, SomeAnotherTextItemBinding> {
+            layout { R.layout.some_another_text_item }
+            diffUtil {
+                areItemsTheSame { oldItem, newItem -> oldItem.id == newItem.id }
+                areContentsTheSame { oldItem, newItem -> oldItem == newItem }
+            }
+            viewHolder {
+                viewBinding(SomeAnotherTextItemBinding::bind)
+                viewBindingCreated {
+                    // setup item view (set click listener etc)
+                }
+            }
+            onBind {
+                binding.textView.text = item.text
+            }
+        }
+    }
+
 }
 
+```
+
+## Integration with other libraries
+
+```kotlin
+class PagingAdapter(
+    private val mediator: MediatorItemDelegate<Any>
+) : PagingDataAdapter<Any, ItemViewHolder<Any>>(mediator.diffUtil) {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder<Any> =
+        mediator.createViewHolder(parent, viewType)
+
+
+    override fun onBindViewHolder(holder: ItemViewHolder<Any>, position: Int) {
+        val item = getItem(position)
+        holder.bind(item)
+    }
+
+    override fun getItemViewType(position: Int): Int =
+        mediator.getItemViewType(getItem(position).require())
+
+}
+
+
+```
+
+Just replace `ItemsAdapter` with `MediatorItemsDelegate`.
+
+```kotlin
+class SomeFragment : Fragment(R.layout.list_fragment) {
+
+    private val binding: ListFragmentBinding by viewBindings()
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val rvAdapter = PagingAdapter(MediatorItemsDelegate())
+        binding.apply {
+            recyclerView.adapter = rvAdapter
+        }
+    }
+
+    private fun MediatorItemsDelegate() = MediatorItemsDelegate {
+        
+        item<SomeClass, TextItemBinding> {
+            layout { R.layout.text_item }
+            diffUtil {
+                areItemsTheSame { oldItem, newItem -> oldItem.id == newItem.id }
+                areContentsTheSame { oldItem, newItem -> oldItem == newItem }
+            }
+            viewHolder {
+                viewBinding(TextItemBinding::bind)
+                viewBindingCreated {
+                    // setup item view (set click listener etc)
+                }
+            }
+            onBind {
+                binding.textView.text = item.text
+            }
+        }
+    }
+
+}
 ```
 
