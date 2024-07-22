@@ -75,6 +75,7 @@ class SomeFragment : Fragment(R.layout.list_fragment) {
 ```
 
 ## Integration with other libraries
+### Paging Library
 
 ```kotlin
 class PagingAdapter(
