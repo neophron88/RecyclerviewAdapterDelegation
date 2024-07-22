@@ -9,18 +9,18 @@ abstract class ItemViewHolder<I : Any>(
 
     lateinit var item: I
 
-    internal fun bind(item: I) {
-        this.item = item
+    fun bind(item: I?) {
+        item?.let { this.item = it }
         onBind(item)
     }
 
-    internal fun bind(item: I, payloads: MutableList<Any>) {
+    fun bind(item: I, payloads: MutableList<Any>) {
         this.item = item
         onBind(item, payloads)
     }
 
 
-    abstract fun onBind(item: I)
+    abstract fun onBind(item: I?)
 
     open fun onBind(item: I, payloads: MutableList<Any>) {}
 

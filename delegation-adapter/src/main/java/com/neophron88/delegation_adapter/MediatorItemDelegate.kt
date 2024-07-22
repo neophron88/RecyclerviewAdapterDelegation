@@ -6,45 +6,40 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import kotlin.reflect.KClass
 
-@Suppress("UNCHECKED_CAST")
 class MediatorItemDelegate<I : Any> private constructor(
-    delegates: List<ItemDelegate<out I>>
+    delegates: List<ItemDelegate<I>>
 ) {
 
     private val delegateByViewType = SparseArray<ItemDelegate<I>>()
-    private val viewTypeByClass = HashMap<KClass<out I>, Int>()
-    private val delegateByClass = HashMap<KClass<out I>, ItemDelegate<I>>()
+    private val viewTypeByClass = HashMap<KClass<I>, Int>()
+    private val delegateByClass = HashMap<KClass<I>, ItemDelegate<I>>()
 
 
     init {
-        val castedDelegates = delegates as List<ItemDelegate<I>>
-        configureViewType(castedDelegates)
+        decomposeDelegates(delegates)
     }
 
-    private fun configureViewType(
-        delegates: List<ItemDelegate<I>>
-    ) = delegates.forEach { itemDelegate ->
+    private fun decomposeDelegates(delegates: List<ItemDelegate<I>>) =
+        delegates.forEach { itemDelegate ->
+            delegateByViewType.put(itemDelegate.layout, itemDelegate)
+            val itemClass = itemDelegate.itemClass
+            viewTypeByClass[itemClass] = itemDelegate.layout
+            delegateByClass[itemClass] = itemDelegate
 
-        delegateByViewType.put(itemDelegate.layout, itemDelegate)
-
-        val kClass = itemDelegate.itemClass
-        viewTypeByClass[kClass] = itemDelegate.layout
-        delegateByClass[kClass] = itemDelegate
-
-    }
+        }
 
     fun createViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder<I> {
         val inflater = LayoutInflater.from(parent.context)
         val itemDelegate = delegateByViewType[viewType]
         val view = inflater.inflate(itemDelegate.layout, parent, false)
-        return itemDelegate.itemViewHolderProducer(view)
+        return itemDelegate.itemViewHolder(view)
 
     }
 
     fun getItemViewType(item: I): Int {
         val kClass = item::class
         return viewTypeByClass[kClass]
-            ?: throw error(kClass)
+            ?: throw err(kClass)
     }
 
     val diffUtil = object : DiffUtil.ItemCallback<I>() {
@@ -52,34 +47,34 @@ class MediatorItemDelegate<I : Any> private constructor(
         override fun areItemsTheSame(oldItem: I, newItem: I): Boolean {
             val oldClass = oldItem::class
             if (oldClass != newItem::class) return false
-            val diffUtil = delegateByClass[oldClass]?.diffUtil ?: throw error(oldClass)
+            val diffUtil = delegateByClass[oldClass]?.diffUtil ?: throw err(oldClass)
             return diffUtil.areItemsTheSame(oldItem, newItem)
         }
 
         override fun areContentsTheSame(oldItem: I, newItem: I): Boolean {
             val oldClass = oldItem::class
             if (oldClass != newItem::class) return false
-            val diffUtil = delegateByClass[oldClass]?.diffUtil ?: throw error(oldClass)
+            val diffUtil = delegateByClass[oldClass]?.diffUtil ?: throw err(oldClass)
             return diffUtil.areContentsTheSame(oldItem, newItem)
         }
 
         override fun getChangePayload(oldItem: I, newItem: I): Any? {
             val oldClass = oldItem::class
-            if (oldClass != newItem::class) return false
-            val diffUtil = delegateByClass[oldClass]?.diffUtil ?: throw error(oldClass)
+            if (oldClass != newItem::class) return null
+            val diffUtil = delegateByClass[oldClass]?.diffUtil ?: throw err(oldClass)
             return diffUtil.getChangePayload(oldItem, newItem)
         }
     }
 
-    fun error(klass: KClass<out I>) = IllegalStateException(
-        "Can not find ItemDelegate for ${klass.simpleName} class"
+    fun err(klass: KClass<out I>) = IllegalStateException(
+        "Can not find ItemDelegate for ${klass.simpleName} model"
     )
 
     class Builder {
-        private val delegates = mutableListOf<ItemDelegate<out Any>>()
+        private val delegates = mutableListOf<ItemDelegate<Any>>()
 
-        fun addItemDelegate(item: ItemDelegate<out Any>): Builder {
-            delegates.add(item)
+        fun <I : Any> addItemDelegate(item: ItemDelegate<I>): Builder {
+            delegates.add(item as ItemDelegate<Any>)
             return this
         }
 

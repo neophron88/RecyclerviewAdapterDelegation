@@ -1,20 +1,24 @@
 package com.neophron88.delegation_adapter
 
-import android.annotation.SuppressLint
 import androidx.recyclerview.widget.DiffUtil
 
-typealias ItemsTheSamePointer<I, R> = (item: I) -> R
 
-class ItemDiffUtil<I : Any, R>(
-    val itemsTheSameValue: ItemsTheSamePointer<I, R>
+class ItemDiffUtil<I : Any>(
+    private val onAreItemsTheSame: (oldItem: I, newItem: I) -> Boolean,
+    private val onAreContentsTheSame: (oldItem: I, newItem: I) -> Boolean,
+    private val onGetChangePayload: ((oldItem: I, newItem: I) -> Any?)?
 ) : DiffUtil.ItemCallback<I>() {
 
     override fun areItemsTheSame(
         oldItem: I, newItem: I
-    ): Boolean = itemsTheSameValue(oldItem) == itemsTheSameValue(newItem)
+    ): Boolean = onAreItemsTheSame(oldItem, newItem)
 
-    @SuppressLint("DiffUtilEquals")
     override fun areContentsTheSame(
         oldItem: I, newItem: I
-    ): Boolean = oldItem == newItem
+    ): Boolean = onAreContentsTheSame(oldItem, newItem)
+
+    override fun getChangePayload(oldItem: I, newItem: I): Any? {
+        return onGetChangePayload?.invoke(oldItem, newItem)
+            ?: super.getChangePayload(oldItem, newItem)
+    }
 }
